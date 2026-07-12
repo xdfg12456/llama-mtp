@@ -1,0 +1,21 @@
+name: lung-llama-mtp
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pytorch=2.5.*
+  - pytorch-cuda=11.8
+  - numpy
+  - pandas
+  - pyyaml
+  - tqdm
+  - requests
+  - aiohttp
+  - datasets
+  - pyarrow
+  - protobuf
+  - setuptools
+  - wheel
