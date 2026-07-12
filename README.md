@@ -57,8 +57,9 @@ The dataset code under app/training_datasets/pretrain/ supports multiple corpora
 A sample training command is provided in app/train.sh.
 
 ```bash
-bash app/train.sh
+bash train.sh
 ```
+Please executing above command on ../../app path
 
 You can customize the run by editing the script or by passing arguments directly to the trainer module. Important options include:
 
@@ -78,8 +79,9 @@ The trainer also logs metrics to Weights & Biases by default.
 A sample evaluation command is provided in app/eval.sh.
 
 ```bash
-bash app/eval.sh
+bash eval.sh
 ```
+Please executing above command on ../../app path
 
 The evaluation pipeline includes:
 

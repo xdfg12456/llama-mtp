@@ -18,7 +18,7 @@ nvidia-smi
 torchrun \
     --master_port 29501 \
     --nproc_per_node 1 \
-    -m eval.run_all_eval.py \
+    -m eval.run_all_eval \
     --ckpt_dir /workspace/checkpoints/1.3B_4 \
     --output_dir /workspace/log \
     --seed 1
