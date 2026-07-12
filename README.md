@@ -1,4 +1,4 @@
-# 9Lung MTP
+# Llama MTP
 
 This repository trains and evaluates a Llama-style transformer with multi-token prediction (MTP) and auxiliary loss terms for confidence-aware training. The code is organized around the app directory and provides both training and evaluation entry points.
 
@@ -176,7 +176,7 @@ A sample training command is provided in app/train.sh.
 ```bash
 bash train.sh
 ```
-Please executing above command on ../../app path
+Run the command from the `app/` directory.
 
 You can customize the run by editing the script or by passing arguments directly to the trainer module. Important options include:
 
@@ -198,7 +198,7 @@ A sample evaluation command is provided in app/eval.sh.
 ```bash
 bash eval.sh
 ```
-Please executing above command on ../../app path
+Run the command from the `app/` directory.
 
 The evaluation pipeline includes:
 
@@ -211,7 +211,7 @@ Results are written into the log directory.
 
 ## Checkpoints and Logs
 
-- checkpoints/: default location for saved model weigh. click [here](https://huggingface.co/xdfg12456/llama-mtp/tree/main/checkpoints) to download checkpoints
+- checkpoints/: default location for saved model weighs. click [here](https://huggingface.co/xdfg12456/llama-mtp/tree/main/checkpoints) to download checkpoints
 - log/: evaluation and analysis output files
 - hf_cache/: default location for saved datasets
 
