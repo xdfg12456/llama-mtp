@@ -94,7 +94,7 @@ Results are written into the log directory.
 
 ## Checkpoints and Logs
 
-- checkpoints/: default location for saved model weights
+- checkpoints/: default location for saved model weigh. click [here](https://huggingface.co/xdfg12456/llama-mtp/tree/main/checkpoints) to download checkpoints
 - log/: evaluation and analysis output files
 
 ## Notes
