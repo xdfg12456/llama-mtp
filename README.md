@@ -33,13 +33,6 @@ This project is designed for Python 3.11 and PyTorch 2.5 with CUDA 11.8.
 ```bash
 conda env create -f environment.yml
 conda activate lung-llama-mtp
-```
-
-### Python dependencies
-
-If you prefer to install packages manually:
-
-```bash
 pip install -r requirements.txt
 ```
 
