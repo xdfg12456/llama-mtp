@@ -1,0 +1,652 @@
+%----------------------------------------------------------------------
+% 實驗設計分析
+%----------------------------------------------------------------------
+
+\chapter{Experimental Results}\label{chap:experimental_results}
+
+\section{Experimental Setup and Evaluation Metrics}\label{sec:4-setup}
+
+The main experiments were conducted using a 1.3B-parameter MTP model
+with four prediction heads. The models were trained on
+OpenWebText\cite{gokaslan2019openwebtext}. The baseline and proposed
+models were trained on 10 billion tokens, while the ablation experiments
+used models trained on 1 billion tokens. The main SDC+LCM configuration
+used $\lambda_{\mathrm{SDC}}=1.0$, $\tau=0.3$, and
+$\lambda_{\mathrm{LCM}}=0.5$. Detailed training configurations are
+provided in Appendix \ref{app:experimental-config}.
+
+The baseline model was optimized using the original MTP training objective,
+whereas the proposed model additionally incorporated Selective Distribution
+Consistency (SDC) and Latent Consistency Matching (LCM). Both settings used
+the same MTP architecture, allowing the effects of the consistency objectives
+to be evaluated independently of architectural changes.
+
+Unless otherwise specified, values reported with $\pm$ denote the
+mean $\pm$ standard deviation over three random seeds.
+
+The models were evaluated in terms of prediction quality, draft-token
+acceptance, generation quality, and cross-dataset generalization.
+The corresponding evaluation procedures and results are described
+in the following sections.
+
+\section{Main Experimental Results}\label{sec:4-main_results}
+
+\subsection{Oracle Perplexity}
+
+Oracle PPL was computed independently for each prediction head using
+its corresponding ground-truth future token, where lower PPL indicates
+better prediction quality.
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Oracle PPL comparison between the baseline and SDC+LCM.}
+    \label{tab:oracle_ppl}
+    \begin{tabular}{lcccc}
+        \toprule[1.25pt]
+        Setting & Head 1 & Head 2 & Head 3 & Head 4 \\
+        \midrule
+        Baseline
+        & 19.4293 & 87.2351 & 200.0813 & 318.3247 \\
+
+        SDC+LCM
+        & \textbf{19.1695}
+        & \textbf{83.7266}
+        & \textbf{189.2825}
+        & \textbf{299.5625} \\
+
+        Improvement
+        & 1.34\%
+        & 4.02\%
+        & 5.40\%
+        & \textbf{5.89\%} \\
+        \bottomrule[1.25pt]
+    \end{tabular}
+\end{table}
+
+Table \ref{tab:oracle_ppl} compares the Oracle PPL of the baseline MTP model and the proposed SDC+LCM model across four prediction heads. The proposed method consistently reduces PPL for all prediction heads. Head 1 shows a relatively small improvement of 1.34\%, whereas larger improvements are observed for the later prediction heads. Specifically, the PPL reductions for Heads 2, 3, and 4 are 4.02\%, 5.40\%, and 5.89\%, respectively.
+
+The improvement becomes more pronounced as the prediction position moves farther into the future, with Head 4 achieving the largest reduction. This result indicates that consistency-based training is particularly beneficial for the optimization of later prediction heads, which are responsible for more distant future-token predictions. Although the consistency objectives primarily constrain Heads 2–4, a slight improvement is also observed for Head 1.
+
+\subsection{Draft Token Acceptance}\label{subsec:draft_token_acceptance}
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Comparison of Average Draft Tokens Accepted between the baseline and SDC+LCM.}
+    \label{tab:draft_token_acceptance}
+    \begin{tabular}{lccccc}
+        \toprule[1.25pt]
+        Setting
+        & Overall
+        & Prefix 128
+        & Prefix 256
+        & Prefix 512
+        & Prefix 768 \\
+        \midrule
+
+        Baseline
+        & 0.7010
+        & 0.9117 $\pm$ 0.0205
+        & 0.9458 $\pm$ 0.0068
+        & 0.9689 $\pm$ 0.0221
+        & 0.9760 $\pm$ 0.0222 \\
+
+        SDC+LCM
+        & \textbf{0.7302}
+        & \textbf{0.9653 $\pm$ 0.0401}
+        & \textbf{0.9873 $\pm$ 0.0063}
+        & \textbf{1.0158 $\pm$ 0.0309}
+        & \textbf{1.0272 $\pm$ 0.0250} \\
+
+        Improvement
+        & 4.17\%
+        & \textbf{5.88\%}
+        & 4.39\%
+        & 4.84\%
+        & 5.25\% \\
+        \bottomrule[1.25pt]
+    \end{tabular}
+\end{table}
+
+Draft-token acceptance was evaluated using greedy predictions from the
+MTP heads. Head 1 was used as the verification reference, while predictions
+from Heads 2--$K$ were treated as draft tokens. Draft tokens were accepted
+sequentially when they matched the corresponding Head 1 predictions, and
+verification stopped at the first mismatch. Head 1 itself was not included
+in the accepted draft-token count.
+
+Average Draft Tokens Accepted denotes the average number of consecutively
+accepted draft tokens per evaluation instance. The overall result was computed
+over all valid positions, while additional evaluations were conducted using
+random contiguous prefixes of lengths 128, 256, 512, and 768.
+
+Table \ref{tab:draft_token_acceptance} compares the Average Draft Tokens
+Accepted between the baseline and SDC+LCM. The proposed method increases
+the overall Average Draft Tokens Accepted from 0.7010 to 0.7302,
+corresponding to an improvement of 4.17\%.
+
+Consistent improvements are also observed across different prefix lengths.
+At prefix lengths of 128, 256, 512, and 768, SDC+LCM achieves improvements
+of 5.88\%, 4.39\%, 4.84\%, and 5.25\%, respectively. Among these settings,
+the largest improvement is observed at a prefix length of 128, while the
+highest absolute number of accepted draft tokens is achieved at a prefix
+length of 768.
+
+These results indicate that the proposed consistency objectives improve
+the reliability of future-token predictions, resulting in more draft tokens
+being accepted under the self-speculative decoding criterion.
+
+\subsection{Generative Quality}\label{subsec:generative_quality}
+
+Generation quality was evaluated using Generative PPL, entropy, and
+4-gram repetition. A total of 200 samples were generated using the first
+128 tokens of each evaluation sequence as the prompt. Generation was
+performed using top-$p$ and temperature sampling with $p=0.9$ and a
+temperature of 0.8. Generative PPL was computed using GPT-2 Large as an
+external language model, where only the generated continuation was included
+in the perplexity calculation. Entropy was used to characterize the
+diversity of generated tokens, while 4-gram repetition was used to measure
+repetitive generation patterns.
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Comparison of generative quality between the baseline and SDC+LCM.}
+    \label{tab:generative_quality}
+    \begin{tabular}{lccc}
+        \toprule[1.25pt]
+        Setting
+        & Generative PPL
+        & Entropy
+        & 4-gram Repetition \\
+        \midrule
+
+        Baseline
+        & 39.5580 $\pm$ 0.9425
+        & 7.3223 $\pm$ 0.0351
+        & 0.0229 $\pm$ 0.0084 \\
+
+        SDC+LCM
+        & \textbf{18.7180 $\pm$ 0.8276}
+        & 6.8620 $\pm$ 0.0202
+        & 0.0526 $\pm$ 0.0147 \\
+
+        Change
+        & \textbf{-52.68\%}
+        & -6.29\%
+        & +130.17\% \\
+        \bottomrule[1.25pt]
+    \end{tabular}
+\end{table}
+
+Table \ref{tab:generative_quality} compares the generation quality of the
+baseline and SDC+LCM models. The proposed method substantially reduces
+Generative PPL from 39.5580 to 18.7180, corresponding to a reduction of
+52.68\%. This result indicates that the generated text is evaluated as
+more predictable by the external language model.
+
+In addition, the entropy decreases from 7.3223 to 6.8620, representing
+a reduction of 6.29\%. However, the 4-gram repetition increases from
+0.0229 to 0.0526, corresponding to a relative increase of 130.17\%.
+
+These results reveal a trade-off in generation behavior. Although
+SDC+LCM significantly improves Generative PPL, the lower entropy and
+higher 4-gram repetition indicate reduced generation diversity and an
+increased tendency toward repetitive patterns. Nevertheless, the
+absolute increase in 4-gram repetition is approximately 0.03.
+
+\section{Zero-Shot Evaluation}\label{sec:zero_shot_evaluation}
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Zero-shot Oracle PPL improvement of SDC+LCM over the baseline across different datasets.}
+    \label{tab:zero_shot_ppl}
+    \begin{tabular}{lcccc}
+        \toprule[1.25pt]
+        Dataset
+        & Head 1
+        & Head 2
+        & Head 3
+        & Head 4 \\
+        \midrule
+
+        WikiText
+        & 0.32\%
+        & \textbf{7.57\%}
+        & 7.19\%
+        & 5.62\% \\
+
+        PTB
+        & \textbf{13.82\%}
+        & 9.90\%
+        & 10.53\%
+        & 5.63\% \\
+
+        LAMBADA
+        & \textbf{38.53\%}
+        & 10.43\%
+        & 4.44\%
+        & 3.27\% \\
+
+        arXiv
+        & 1.48\%
+        & \textbf{3.94\%}
+        & 3.71\%
+        & 0.27\% \\
+
+        PubMed
+        & 7.04\%
+        & 7.76\%
+        & \textbf{8.33\%}
+        & 8.26\% \\
+
+        \bottomrule[1.25pt]
+    \end{tabular}
+\end{table}
+
+To evaluate the generalization ability of the proposed method across
+different domains, zero-shot evaluation was conducted on WikiText\cite{merity2016wikitext},
+Penn Treebank (PTB)\cite{marcus1993ptb}, LAMBADA\cite{paperno2016lambada}, and the arXiv and PubMed subsets of the Scientific Papers dataset\cite{cohan2018scientificpapers}.
+Table \ref{tab:zero_shot_ppl} reports the relative Oracle PPL improvement
+of SDC+LCM over the baseline for each prediction head.
+
+Overall, SDC+LCM achieves PPL improvements across all evaluated datasets
+and prediction heads, although the magnitude of improvement varies
+considerably across domains. For Head 1, relatively large improvements
+are observed on PTB\cite{marcus1993ptb}, LAMBADA\cite{paperno2016lambada}, and PubMed\cite{cohan2018scientificpapers}, with LAMBADA\cite{paperno2016lambada} showing the
+largest reduction of 38.53\%. In contrast, the improvement on WikiText\cite{merity2016wikitext}
+is limited to 0.32\%.
+
+For WikiText\cite{merity2016wikitext}, the improvements are mainly concentrated on Heads 2--4,
+with reductions of 7.57\%, 7.19\%, and 5.62\%, respectively, while the
+improvement for Head 1 is relatively limited.
+
+The improvement patterns also vary for later prediction heads across
+different domains. For example, Head 4 achieves an 8.26\% improvement
+on PubMed but only a 0.27\% improvement on arXiv. These results indicate
+that the effectiveness of consistency-based training depends partly on
+the characteristics of the evaluation domain, while generally yielding improvements across unseen datasets.
+
+\section{Ablation Study}\label{sec:ablation_study}
+
+\subsection{Overall Ablation Results}\label{subsec:overall_ablation_results}
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Ablation results of Oracle PPL under different consistency settings.}
+    \label{tab:ablation_oracle_ppl}
+    \small
+    \begin{tabular}{lcccc}
+        \toprule[1.25pt]
+        Setting
+        & Head 1
+        & Head 2
+        & Head 3
+        & Head 4 \\
+        \midrule
+
+        Baseline
+        & 26.2356 
+        & 121.8033 
+        & 269.2450 
+        & 406.6959  \\
+
+        $\lambda_{SDC}=0.5,\ \tau=0.3,\ \lambda_{LCM}=0$
+        & 26.4587 
+        & 120.7186 
+        & 265.0660 
+        & 402.0413  \\
+        
+        $\lambda_{SDC}=1.5,\ \tau=0.3,\ \lambda_{LCM}=0$
+        & 27.2684 
+        & 122.5244 
+        & 264.6119 
+        & 397.3106  \\
+
+        \midrule
+
+        $\lambda_{SDC}=1.0,\ \tau=0.0,\ \lambda_{LCM}=0$
+        & 26.7541 
+        & 120.6687 
+        & 261.6664 
+        & 394.6503  \\
+
+        $\lambda_{SDC}=1.0,\ \tau=0.3,\ \lambda_{LCM}=0$
+        & 26.8150 
+        & 120.5276 
+        & 261.9479 
+        & 394.7055  \\
+
+        $\lambda_{SDC}=1.0,\ \tau=0.6,\ \lambda_{LCM}=0$
+        & 27.7396 
+        & 129.2922
+        & 278.8881 
+        & 417.5874  \\
+
+        \midrule
+
+        $\lambda_{SDC}=0,\ \tau=0,\ \lambda_{LCM}=0.5$
+        & 25.7096 
+        & 118.9247 
+        & 262.1637 
+        & 397.9911  \\
+
+        $\lambda_{SDC}=0,\ \tau=0,\ \lambda_{LCM}=1.0$
+        & 25.5312 
+        & 118.5823 
+        & 261.1872 
+        & 395.1838  \\
+
+        $\lambda_{SDC}=0,\ \tau=0,\ \lambda_{LCM}=1.5$
+        & \textbf{25.4583} 
+        & 119.1595 
+        & 263.2083 
+        & 398.8679  \\
+
+        \midrule
+
+        $\lambda_{SDC}=1.0,\ \tau=0.3,\ \lambda_{LCM}=0.5$
+        & 26.2402 
+        & \textbf{118.2168} 
+        & 257.0344 
+        & 387.7455  \\
+
+        $\lambda_{SDC}=1.0,\ \tau=0.3,\ \lambda_{LCM}=1.0$
+        & 26.4553 
+        & 119.2975 
+        & 258.4100 
+        & 390.7829  \\
+
+        $\lambda_{SDC}=1.5,\ \tau=0.3,\ \lambda_{LCM}=1.0$
+        & 26.5485
+        & 118.4341 
+        & \textbf{254.9612} 
+        & \textbf{383.7626}  \\
+
+        \bottomrule[1.25pt]
+    \end{tabular}
+
+    \vspace{2mm}
+    
+    \footnotesize{\textit{Bold values indicate the best result in each column.}}
+\end{table}
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Ablation results of Average Draft Tokens Accepted under different consistency settings.}
+    \label{tab:ablation_draft_tokens}
+    \resizebox{\textwidth}{!}{
+        \begin{tabular}{lccccc}
+            \toprule[1.25pt]
+            Setting
+            & Overall
+            & Prefix 128
+            & Prefix 256
+            & Prefix 512
+            & Prefix 768 \\
+            \midrule
+
+            Baseline
+            & 0.6238
+            & 0.8251 $\pm$ 0.0140
+            & 0.8205 $\pm$ 0.0062
+            & 0.8519 $\pm$ 0.0195
+            & 0.8552 $\pm$ 0.0233 \\
+
+            $\lambda_{SDC}=0.5,\ \tau=0.3,\ \lambda_{LCM}=0$
+            & 0.6345
+            & 0.8195 $\pm$ 0.0122
+            & 0.8416 $\pm$ 0.0115
+            & 0.8601 $\pm$ 0.0065
+            & 0.8644 $\pm$ 0.0304 \\
+
+            $\lambda_{SDC}=1.5,\ \tau=0.3,\ \lambda_{LCM}=0$
+            & 0.6414
+            & 0.8522 $\pm$ 0.0098
+            & 0.8581 $\pm$ 0.0139
+            & 0.8897 $\pm$ 0.0043
+            & \textbf{0.9082 $\pm$ 0.0204} \\
+
+            \midrule
+
+            $\lambda_{SDC}=1.0,\ \tau=0.0,\ \lambda_{LCM}=0$
+            & 0.6388
+            & 0.8374 $\pm$ 0.0165
+            & 0.8746 $\pm$ 0.0108
+            & 0.8736 $\pm$ 0.0158
+            & 0.8802 $\pm$ 0.0029 \\
+
+            $\lambda_{SDC}=1.0,\ \tau=0.3,\ \lambda_{LCM}=0$
+            & 0.6400
+            & 0.8406 $\pm$ 0.0131
+            & 0.8602 $\pm$ 0.0232
+            & 0.8720 $\pm$ 0.0233
+            & 0.8772 $\pm$ 0.0015 \\
+
+            $\lambda_{SDC}=1.0,\ \tau=0.6,\ \lambda_{LCM}=0$
+            & 0.6113
+            & 0.7908 $\pm$ 0.0074
+            & 0.7919 $\pm$ 0.0086
+            & 0.8009 $\pm$ 0.0035
+            & 0.8174 $\pm$ 0.0130 \\
+
+            \midrule
+
+            $\lambda_{SDC}=0,\ \tau=0,\ \lambda_{LCM}=0.5$
+            & 0.6398
+            & 0.8517 $\pm$ 0.0156
+            & 0.8589 $\pm$ 0.0096
+            & 0.8794 $\pm$ 0.0050
+            & 0.8895 $\pm$ 0.0257 \\
+
+            $\lambda_{SDC}=0,\ \tau=0,\ \lambda_{LCM}=1.0$
+            & 0.6442
+            & 0.8491 $\pm$ 0.0130
+            & 0.8698 $\pm$ 0.0154
+            & 0.8919 $\pm$ 0.0168
+            & 0.8943 $\pm$ 0.0012 \\
+
+            $\lambda_{SDC}=0,\ \tau=0,\ \lambda_{LCM}=1.5$
+            & 0.6467
+            & 0.8510 $\pm$ 0.0112
+            & \textbf{0.8862 $\pm$ 0.0054}
+            & 0.8951 $\pm$ 0.0129
+            & 0.9028 $\pm$ 0.0327 \\
+
+            \midrule
+
+            $\lambda_{SDC}=1.0,\ \tau=0.3,\ \lambda_{LCM}=0.5$
+            & 0.6507
+            & 0.8498 $\pm$ 0.0339
+            & 0.8615 $\pm$ 0.0179
+            & 0.8987 $\pm$ 0.0103
+            & 0.8862 $\pm$ 0.0151 \\
+
+            $\lambda_{SDC}=1.0,\ \tau=0.3,\ \lambda_{LCM}=1.0$
+            & 0.6495
+            & 0.8402 $\pm$ 0.0209
+            & 0.8612 $\pm$ 0.0043
+            & 0.8879 $\pm$ 0.0157
+            & 0.8950 $\pm$ 0.0071 \\
+
+            $\lambda_{SDC}=1.5,\ \tau=0.3,\ \lambda_{LCM}=1.0$
+            & \textbf{0.6525}
+            & \textbf{0.8590 $\pm$ 0.0101}
+            & 0.8656 $\pm$ 0.0214
+            & \textbf{0.9023 $\pm$ 0.0277}
+            & 0.9044 $\pm$ 0.0140 \\
+
+            \bottomrule[1.25pt]
+        \end{tabular}
+    }
+    \vspace{2mm}
+    
+    \footnotesize{\textit{Bold values indicate the best result in each column.}}
+\end{table}
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Ablation results of generative quality under different consistency settings.}
+    \label{tab:ablation_generation}
+    \small
+    \begin{tabular}{lccc}
+        \toprule[1.25pt]
+        Setting
+        & Generative PPL
+        & Entropy
+        & 4-gram Repetition \\
+        \midrule
+
+        Baseline
+        & 83.8285 $\pm$ 5.1409
+        & 7.4068 $\pm$ 0.0461
+        & 0.0119 $\pm$ 0.0097 \\
+
+        $\lambda_{SDC}=0.5,\ \tau=0.3,\ \lambda_{LCM}=0$
+        & 52.7654 $\pm$ 2.2732
+        & 7.1490 $\pm$ 0.0335
+        & 0.0323 $\pm$ 0.0169 \\
+
+        $\lambda_{SDC}=1.5,\ \tau=0.3,\ \lambda_{LCM}=0$
+        & 31.8082 $\pm$ 0.4503
+        & 6.8248 $\pm$ 0.0353
+        & 0.0485 $\pm$ 0.0159 \\
+
+        \midrule
+
+        $\lambda_{SDC}=1.0,\ \tau=0.0,\ \lambda_{LCM}=0$
+        & 68.0596 $\pm$ 4.5760
+        & 7.3141 $\pm$ 0.0519
+        & 0.0193 $\pm$ 0.0154 \\
+
+        $\lambda_{SDC}=1.0,\ \tau=0.3,\ \lambda_{LCM}=0$
+        & 48.4875 $\pm$ 1.2280
+        & 7.1184 $\pm$ 0.0336
+        & 0.0183 $\pm$ 0.0055 \\
+
+        $\lambda_{SDC}=1.0,\ \tau=0.6,\ \lambda_{LCM}=0$
+        & 28.2332 $\pm$ 1.2754
+        & 6.7789 $\pm$ 0.0178
+        & 0.0393 $\pm$ 0.0080 \\
+
+        \midrule
+
+        $\lambda_{SDC}=0,\ \tau=0,\ \lambda_{LCM}=0.5$
+        & 26.2091 $\pm$ 1.5675
+        & 6.8576 $\pm$ 0.0374
+        & 0.0555 $\pm$ 0.0204 \\
+
+        $\lambda_{SDC}=0,\ \tau=0,\ \lambda_{LCM}=1.0$
+        & 24.0955 $\pm$ 3.2440
+        & 6.7935 $\pm$ 0.0828
+        & 0.0657 $\pm$ 0.0388 \\
+
+        $\lambda_{SDC}=0,\ \tau=0,\ \lambda_{LCM}=1.5$
+        & 29.9033 $\pm$ 0.5373
+        & 6.8644 $\pm$ 0.0249
+        & 0.0215 $\pm$ 0.0049 \\
+
+        \midrule
+
+        $\lambda_{SDC}=1.0,\ \tau=0.3,\ \lambda_{LCM}=0.5$
+        & \textbf{21.4788 $\pm$ 0.0773}
+        & 6.6876 $\pm$ 0.0421
+        & 0.0720 $\pm$ 0.0062 \\
+
+        $\lambda_{SDC}=1.0,\ \tau=0.3,\ \lambda_{LCM}=1.0$
+        & 26.3414 $\pm$ 0.3656
+        & 6.7567 $\pm$ 0.0016
+        & 0.0460 $\pm$ 0.0160 \\
+
+        $\lambda_{SDC}=1.5,\ \tau=0.3,\ \lambda_{LCM}=1.0$
+        & 25.7832 $\pm$ 1.6338
+        & 6.7177 $\pm$ 0.0455
+        & 0.0453 $\pm$ 0.0197 \\
+
+        \bottomrule[1.25pt]
+    \end{tabular}
+
+    \vspace{2mm}
+    
+    \footnotesize{\textit{Bold indicates the lowest Generative PPL.}}
+\end{table}
+
+\FloatBarrier
+
+\subsection{Effect of SDC Weight}\label{subsece:effect_of_sdc_weight}
+
+To investigate the effect of the SDC loss weight, the confidence threshold
+and LCM weight were fixed at $\tau=0.3$ and $\lambda_{LCM}=0$, respectively, while
+the SDC weight was varied among $\lambda_{SDC}=0.5$, $1.0$, and $1.5$. The baseline
+without consistency regularization is also included for comparison.
+
+Increasing the SDC weight generally improves draft-token acceptance and
+reduces Generative PPL, while the Oracle PPL results indicate that excessively
+strong distribution consistency does not consistently benefit all prediction
+heads.
+
+\subsection{Effect of Confidence Threshold}\label{subsece:effect_of_confidence_threshold}
+
+To investigate the effect of the confidence threshold, $\lambda_{SDC}=1.0$ and
+$\lambda_{LCM}=0$ were fixed while $\tau$ was varied among 0.0, 0.3, and 0.6.
+
+The Oracle PPL results are similar between $\tau=0.0$ and $\tau=0.3$,
+whereas $\tau=0.6$ significantly degrades all prediction heads. A similar
+trend is observed for Average Draft Tokens Accepted, which decreases from
+0.6400 at $\tau=0.3$ to 0.6113 at $\tau=0.6$.
+
+In contrast, Generative PPL continues to decrease as $\tau$ increases,
+but this is accompanied by lower entropy and higher 4-gram repetition.
+Therefore, an excessively high confidence threshold may improve
+Generative PPL while degrading future-token prediction and draft-token
+acceptance, indicating a trade-off among evaluation metrics.
+
+\subsection{Effect of LCM Weight}\label{subsece:effect_of_lcm_weight}
+
+To investigate the effect of the LCM weight, $\lambda_{SDC}=0$ was fixed while
+$\lambda_{LCM}$ was varied among 0.5, 1.0, and 1.5.
+
+Increasing $\lambda_{LCM}$ from 0.5 to 1.0 generally improves Oracle PPL across
+the prediction heads. However, further increasing $\lambda_{LCM}$ to 1.5 slightly
+degrades the PPL of Heads 2--4, suggesting that excessive latent
+consistency does not provide additional benefits.
+
+Average Draft Tokens Accepted gradually increases from 0.6398 to 0.6467
+as $\lambda_{LCM}$ increases. In contrast, Generative PPL reaches its lowest value
+at $\lambda_{LCM}=1.0$ and increases again at $\lambda_{LCM}=1.5$. 
+These results indicate that a moderate LCM weight provides a better
+balance between prediction quality and draft-token acceptance.
+
+\subsection{Joint Effect of SDC and LCM}\label{subsece:effect_of_joint_effect}
+
+To evaluate the joint effect of SDC and LCM, configurations using both
+consistency objectives were compared with SDC-only and LCM-only settings.
+
+Joint training generally achieves lower Oracle PPL for Heads 2--4 and
+higher Average Draft Tokens Accepted than using either consistency
+objective alone. In particular, the joint configurations achieve draft
+acceptance values of approximately 0.65, compared with 0.6400 for the
+SDC-only setting and 0.6442 for the LCM-only setting.
+
+For generation quality, joint training further reduces Generative PPL,
+but is accompanied by lower entropy and higher 4-gram repetition.
+Therefore, SDC and LCM can complement each other in improving future-token
+prediction and draft-token acceptance, while a trade-off with generation
+diversity remains.
+
+\section{Discussion}\label{subsece:discussion}
+
+The experimental results show that consistency-based training is particularly
+beneficial for prediction heads responsible for more distant future tokens.
+Across the main experiments, SDC+LCM consistently reduces Oracle PPL, with
+larger improvements generally observed for the later prediction heads.
+
+The improvement in future-token prediction is also reflected in draft-token
+acceptance. SDC+LCM increases the Average Draft Tokens Accepted, while the
+zero-shot results indicate that the benefits of consistency-based training
+can generalize across different domains.
+
+However, the ablation study shows that stronger consistency constraints do
+not always lead to better overall performance. In particular, lower
+Generative PPL is often accompanied by lower entropy and higher repetition,
+indicating a trade-off between prediction consistency and generation
+diversity. Therefore, the strengths of SDC, LCM, and the confidence threshold
+should be carefully balanced.

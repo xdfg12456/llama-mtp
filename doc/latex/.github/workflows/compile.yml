@@ -1,0 +1,64 @@
+# The name of this action
+name: Compile Project to PDF
+
+permissions:
+  contents: write
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push to any tags
+  push:
+    tags:
+      - '*'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  
+  Compile:
+    
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+
+      # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
+      - name: Set up Git Repository
+        uses: actions/checkout@v2
+
+      # This action is to modify Chinese font name declared in the config
+      #   1. Downliad the font file online.
+      #   2. Add the required package to include ttf file directly.
+      #   3. Modify the font name declared in the config.
+      - name: Modify Chinese Font
+        run: |
+          if [ ! -f ./kaiu.ttf ]; then wget -O kaiu.ttf https://fonts.gstatic.com/ea/cwtexkai/v3/cwTeXKai-zhonly.ttf ; fi
+          echo -e "\n\\usepackage{fontspec}" >> Config/fonts.tex
+          sed -i '/^\\zhFont/s/.*/\\zhFont{kaiu.ttf}/' Config/fonts.tex && cat Config/fonts.tex
+
+      # This action is to install English font
+      #   1. Accept the EULA that will pop-up during installation
+      #   2. Install the font package
+      #   3. Copy font file to local directory
+      #   4. Modify the font name declared in the config.
+      - name: Modify English Font
+        run: |
+          echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
+          sudo apt-get install ttf-mscorefonts-installer
+          cp /usr/share/fonts/truetype/msttcorefonts/times.ttf .
+          sed -i 's/Times New Roman/times.ttf/1' Config/fonts.tex && cat Config/fonts.tex
+
+      #  This action is to compile LaTeX documents
+      - name: Compile LaTeX Documents
+        uses: xu-cheng/latex-action@v2
+        with:
+          root_file: main.tex
+          # compile with xelatex
+          latexmk_use_xelatex: true
+      
+      # This action is to create GitHub Releases
+      - name: Release
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          files: |
+            main.pdf

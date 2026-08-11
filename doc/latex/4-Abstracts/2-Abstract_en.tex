@@ -1,0 +1,18 @@
+%----------------------------------------------------------------------
+% 英文摘要
+%----------------------------------------------------------------------
+
+% 把英文摘要寫在裡面
+\begin{enAbstract}
+
+    Autoregressive large language models typically generate tokens sequentially during inference, causing generation latency to increase with the length of the output sequence. Multi-Token Prediction (MTP) enables a model to predict multiple future tokens within a single forward pass through a shared model trunk and multiple prediction heads, thereby providing the potential to accelerate decoding. However, standard MTP mainly trains each prediction head independently using the cross-entropy loss associated with its corresponding ground-truth token, without explicitly enforcing consistency across prediction heads. As a result, prediction heads responsible for tokens farther into the future are generally more difficult to optimize.
+
+    To address this issue, this study proposes Selective Distribution Consistency (SDC) and combines it with Latent Consistency Matching (LCM). Without modifying the underlying MTP architecture, the proposed approach improves consistency between the first prediction head and the remaining prediction heads at both the output probability distribution and latent representation levels. SDC treats the first prediction head as the teacher and uses its predictive probability distribution to supervise the remaining student heads. A confidence threshold is further applied to exclude low-confidence positions, thereby reducing the influence of unreliable teacher signals during consistency learning. In contrast, LCM minimizes the discrepancy between the hidden representations of the teacher and student heads using the mean squared error.
+
+    The models are trained on OpenWebText and evaluated using Oracle perplexity (Oracle PPL) for individual prediction heads, Average Draft Tokens Accepted, generative perplexity (Generative PPL), entropy, 4-gram repetition, and cross-dataset zero-shot evaluation. These metrics are used to assess the effects of the proposed methods on prediction quality, draft-token acceptance, and generation quality.
+
+    Experimental results on the main 1.3B-parameter model show that, compared with the standard MTP baseline, joint training with SDC and LCM reduces perplexity across all four prediction heads, with the largest improvement of 5.9\% observed for the fourth prediction head. The Average Draft Tokens Accepted increases by 4.2\%, while Generative PPL decreases by 52.7\%. Cross-dataset zero-shot evaluation further demonstrates improvements across most datasets and prediction heads. Overall, the results indicate that enforcing consistency at both the output distribution and latent representation levels improves the optimization of prediction heads responsible for more distant future tokens, increases draft-token acceptance, and demonstrates the potential for more efficient MTP decoding.
+
+    % 這個Command會自動幫你把Config裡面設定的東東填進來    
+    \enAbsKeywords
+\end{enAbstract}

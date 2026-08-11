@@ -1,0 +1,62 @@
+%----------------------------------------------------------------------
+% 結論與未來展望
+%----------------------------------------------------------------------
+
+\chapter{Conclusion and Future Work}\label{chap:conclusion_future_work}
+
+\section{Conclusion}\label{sec:conclusion}
+
+This thesis investigates consistency-based training for Multi-Token
+Prediction (MTP) to improve the optimization of future-token prediction
+heads. Two consistency objectives are introduced: Selective Distribution
+Consistency (SDC), which selectively aligns the output distributions of
+student heads with the first prediction head, and Latent Consistency
+Matching (LCM), which aligns their latent representations. Both objectives
+are incorporated into training without modifying the original MTP
+architecture.
+
+Experimental results on the 1.3B-parameter model demonstrate that SDC+LCM
+improves future-token prediction and draft-token acceptance. Compared with
+the baseline, Oracle PPL is reduced across all four prediction heads, with
+Head 4 achieving the largest improvement of 5.89\%. The Average Draft Tokens
+Accepted increases from 0.7010 to 0.7302, corresponding to an improvement
+of 4.17\%. In addition, Generative PPL decreases from 39.5580 to 18.7180,
+representing a reduction of 52.68\%. Zero-shot evaluation further shows
+improvements across multiple unseen datasets.
+
+The ablation study shows that the strengths of SDC and LCM, as well as the
+confidence threshold, should be carefully balanced. Lower Generative PPL is
+often accompanied by lower entropy and higher repetition, indicating a
+trade-off with generation diversity. Overall, the proposed consistency-based
+training framework improves the prediction quality of MTP heads, particularly
+for more distant future-token predictions, while also increasing
+draft-token acceptance without modifying the model architecture.
+
+\section{Future Work}\label{sec:future_work}
+
+Several directions can be explored in future work. First, the proposed
+consistency objectives can be evaluated with larger models and larger
+training budgets. Since the ablation study in this work was conducted
+using models trained on only 1 billion tokens, larger-scale experiments
+may provide a more comprehensive understanding of the effects of SDC,
+LCM, and their associated hyperparameters.
+
+Second, future studies can investigate the application of SDC and LCM
+during supervised fine-tuning (SFT). This would help determine whether
+the proposed consistency objectives remain effective when adapted to
+downstream instruction-following and generation tasks.
+
+Third, future work should evaluate the actual inference speed-up of the
+proposed method using a complete self-speculative decoding system.
+Although this work demonstrates an increase in Average Draft Tokens
+Accepted, practical acceleration also depends on factors such as
+verification overhead, memory access, and hardware utilization.
+Therefore, wall-clock latency and end-to-end decoding throughput should
+be measured to determine the practical efficiency gains of the proposed
+approach.
+
+Finally, the trade-off between consistency and generation diversity
+deserves further investigation. Future work may explore alternative
+regularization strategies or adaptive consistency weighting to preserve
+the improvements in prediction quality while mitigating the increase
+in repetitive generation.

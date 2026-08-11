@@ -1,0 +1,41 @@
+%----------------------------------------------------------------------
+% 附錄頁
+%----------------------------------------------------------------------
+
+\begin{Appx}{Experimental Configuration}\label{app:experimental-config}
+
+For optimization, AdamW~\cite{loshchilov2019adamw} was used with
+$\beta_1=0.9$, $\beta_2=0.95$, and a decoupled weight decay coefficient
+of 0.1. The learning rate was linearly warmed up, followed by a cosine
+decay schedule~\cite{loshchilov2017sgdr}. In addition, gradients were
+clipped to a maximum Euclidean norm of 1.0 throughout training.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Detailed experimental configuration.}
+    \label{tab:experimental-config}
+
+    \begin{tabular}{ll}
+        \hline
+        \textbf{Configuration} & \textbf{Value} \\
+        \hline
+        Model Size & 1.3B \\
+        Number of Prediction Heads & 4 \\
+        Main Training Tokens & 10B \\
+        Ablation Training Tokens & 1B \\
+        Sequence Length & 1024 \\
+        Batch Size & 8 \\
+        Optimizer & AdamW \\
+        Peak LR & $3 \times 10^{-4}$ \\
+        Weight Decay & 0.1 \\
+        Warm-up Steps & 15000 \\
+        $\lambda_{\mathrm{SDC}}$ & 1.0 \\
+        Confidence Threshold $\tau$ & 0.3 \\
+        $\lambda_{\mathrm{LCM}}$ & 0.5 \\
+        Top-$p$ & 0.9 \\
+        Temperature & 0.8 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\end{Appx}
